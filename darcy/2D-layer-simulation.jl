@@ -18,7 +18,9 @@ dims = (nx, ny, nz)
 g = CartesianMesh(dims, (100.0, 10.0, 10.0))
 nc = number_of_cells(g)
 Darcy = 9.869232667160130e-13
-K = repeat([0.1, 0.1, 0.001]*Darcy, 1, nc)
+Kx = 0.1 * ones(nx, nz) * Darcy
+Kx[:, 7:9] .= 0.001 * Darcy
+K = vcat(vec(Kx)', vec(Kx)', 1e-2*vec(Kx)')
 res = discretized_domain_tpfv_flow(tpfv_geometry(g), porosity = 0.3, permeability = K)
 ## Set up a vertical well in the first corner, perforated in top layer
 prod = setup_well(g, K, [(nx, ny, 1)], name = :Producer)
@@ -40,9 +42,7 @@ state0 = setup_reservoir_state(model, Pressure = 50*bar, OverallMoleFractions = 
 
 # 5 year (5*365.24 days)
 day = 24*3600.0
-dt0 = repeat([1]*day, 26)
-dt1 = repeat([10.0]*day, 90)
-dt = append!(dt0, dt1)
+dt = repeat([1]*day, 2000)
 rate_target = TotalRateTarget(9.5066e-06)
 I_ctrl = InjectorControl(rate_target, [0, 1], density = rhoVS)
 bhp_target = BottomHolePressureTarget(50*bar)
@@ -57,5 +57,11 @@ sim, config = setup_reservoir_simulator(model, state0, parameters, info_level = 
 states, reports = simulate!(sim, dt, forces = forces, config = config);
 
 ## Once the simulation is done, we can plot the states
-f, = plot_interactive(g, map(x -> x[:Reservoir], states))
-display(f)
+#f, = plot_interactive(g, map(x -> x[:Reservoir], states))
+#display(f)
+
+using PyPlot
+for i = 1:length(states)
+figure();imshow(reshape(states[i][:Reservoir][:OverallMoleFractions][2,:], nx, nz)', vmin=0, vmax=0.6); colorbar();
+savefig("saturation$i.png", bbox_inches="tight", dpi=300)
+end

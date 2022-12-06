@@ -11,11 +11,11 @@ eos = GenericCubicEOS(mixture, PengRobinson())
 
 using Jutul, JutulDarcy, JutulViz
 nx = 50
-ny = 1
+ny = 50
 nz = 20
 bar = 1e5
 dims = (nx, ny, nz)
-g = CartesianMesh(dims, (100.0, 10.0, 10.0))
+g = CartesianMesh(dims, (100.0, 100.0, 10.0))
 nc = number_of_cells(g)
 Darcy = 9.869232667160130e-13
 K = repeat([0.1, 0.1, 0.001]*Darcy, 1, nc)
@@ -41,7 +41,7 @@ state0 = setup_reservoir_state(model, Pressure = 50*bar, OverallMoleFractions = 
 # 5 year (5*365.24 days)
 day = 24*3600.0
 dt0 = repeat([1]*day, 26)
-dt1 = repeat([10.0]*day, 90)
+dt1 = repeat([10.0]*day, 180)
 dt = append!(dt0, dt1)
 rate_target = TotalRateTarget(9.5066e-06)
 I_ctrl = InjectorControl(rate_target, [0, 1], density = rhoVS)
@@ -59,3 +59,7 @@ states, reports = simulate!(sim, dt, forces = forces, config = config);
 ## Once the simulation is done, we can plot the states
 f, = plot_interactive(g, map(x -> x[:Reservoir], states))
 display(f)
+## Plot the wells
+wd = full_well_outputs(sim.model, states, forces)
+time = report_times(reports)
+plot_well_results(wd, time)
