@@ -9,7 +9,7 @@ bic = [0 0;
 mixture = MultiComponentMixture([h2o, co2], A_ij = bic, names = ["H2O", "CO2"])
 eos = GenericCubicEOS(mixture, PengRobinson())
 
-using Jutul, JutulDarcy, JutulViz
+using Jutul, JutulDarcy
 nx = 50
 ny = 1
 nz = 20
@@ -57,11 +57,11 @@ sim, config = setup_reservoir_simulator(model, state0, parameters, info_level = 
 states, reports = simulate!(sim, dt, forces = forces, config = config);
 
 ## Once the simulation is done, we can plot the states
-#f, = plot_interactive(g, map(x -> x[:Reservoir], states))
-#display(f)
 
 using PyPlot
+matplotlib.use("agg")
 for i = 1:length(states)
-figure();imshow(reshape(states[i][:Reservoir][:OverallMoleFractions][2,:], nx, nz)', vmin=0, vmax=0.6); colorbar();
-savefig("saturation$i.png", bbox_inches="tight", dpi=300)
+fig=figure();imshow(reshape(states[i][:Reservoir][:OverallMoleFractions][2,:], nx, nz)', vmin=0, vmax=0.6); colorbar();
+savefig("saturation$i.png", bbox_inches="tight", dpi=300);
+close(fig)
 end
