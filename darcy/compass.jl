@@ -16,15 +16,19 @@ nx, nz = size(x_true)
 ny = 1
 bar = 1e5
 dims = (nx, ny, nz)
-g = CartesianMesh(dims, (12.0, 4980.0, 12.0))
+g = CartesianMesh(dims, (12.0, 12.0, 12.0))
 nc = number_of_cells(g)
 Darcy = 9.869232667160130e-13
 K = Float64.(vcat(vec(x_true)', vec(x_true)', vec(x_true)') * 1e-3 * Darcy)
 res = discretized_domain_tpfv_flow(tpfv_geometry(g), porosity = 0.3, permeability = K)
 ## Set up a vertical well in the first corner, perforated in top layer
-prod = setup_well(g, K, [(nx-10, 1, nz-10)], name = :Producer)
+#prod = setup_well(g, K, [(nx-10, 1, nz-10)], name = :Producer)
 ## Set up an injector in the opposite corner, perforated in bottom layer
-inj = setup_well(g, K, [(q_true[1], 1, q_true[2])], name = :Injector)
+#inj = setup_well(g, K, [(q_true[1], 1, q_true[2])], name = :Injector)
+## Set up a vertical well in the first corner, perforated in top layer
+prod = setup_well(g, K, [(nx, 1, nz)], name = :Producer)
+## Set up an injector in the opposite corner, perforated in bottom layer
+inj = setup_well(g, K, [(1, 1, nz)], name = :Injector)
 
 rhoLS, rhoVS = 844.23, 126.97
 rhoS = [rhoLS, rhoVS]
@@ -38,10 +42,9 @@ T0 = repeat([303.15], 1, nc)
 parameters[:Reservoir][:Temperature] = T0
 state0 = setup_reservoir_state(model, Pressure = 50*bar, OverallMoleFractions = [1.0, 0.0]);
 
-
 # 5 year (5*365.24 days)
 day = 24*3600.0
-dt = repeat([10]*day, 100)
+dt = repeat([0.000001]*day, 100)
 rate_target = TotalRateTarget(1e-3)
 I_ctrl = InjectorControl(rate_target, [0, 1], density = rhoVS)
 bhp_target = BottomHolePressureTarget(50*bar)
@@ -52,7 +55,7 @@ controls[:Injector] = I_ctrl
 controls[:Producer] = P_ctrl
 forces = setup_reservoir_forces(model, control = controls)
 
-sim, config = setup_reservoir_simulator(model, state0, parameters, info_level = -1);
+@time sim, config = setup_reservoir_simulator(model, state0, parameters, info_level = -1);
 states, reports = simulate!(sim, dt, forces = forces, config = config);
 
 ## Once the simulation is done, we can plot the states
@@ -60,7 +63,12 @@ states, reports = simulate!(sim, dt, forces = forces, config = config);
 using PyPlot
 matplotlib.use("agg")
 for i = 1:length(states)
-fig=figure();imshow(reshape(states[i][:Reservoir][:OverallMoleFractions][2,:], nx, nz)', vmin=0, vmax=0.003); colorbar();
-savefig("saturation$i.png", bbox_inches="tight", dpi=300);
-close(fig)
+       fig=figure();
+       subplot(1,2,1);
+       imshow(reshape(states[i][:Reservoir][:OverallMoleFractions][2,:], nx, nz)', vmin=0, vmax=maximum(states[end][:Reservoir][:OverallMoleFractions][2,:])); colorbar(); title("saturation")
+       subplot(1,2,2);
+       imshow(reshape(states[i][:Reservoir][:Pressure].-50*bar, nx, nz)', vmin=0, vmax=maximum(states[i][:Reservoir][:Pressure]).-50*bar); colorbar(); title("pressure - 50*bar")
+       savefig("plots/compass/sat-p-$i.png", bbox_inches="tight", dpi=300);
+       close(fig)
 end
+       
