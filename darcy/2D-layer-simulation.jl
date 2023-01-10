@@ -18,8 +18,8 @@ dims = (nx, ny, nz)
 g = CartesianMesh(dims, (12.5, 10.0, 1.0))
 nc = number_of_cells(g)
 Darcy = 9.869232667160130e-13
-Kx = 0.1 * ones(nx, nz) * Darcy
-Kx[:, 100:105] .= 0.001 * Darcy
+Kx = 1f-1 * ones(nx, nz) * Darcy
+Kx[:, 100:105] .= 1f-4 * Darcy
 K = vcat(vec(Kx)', vec(Kx)', vec(Kx)')
 res = discretized_domain_tpfv_flow(tpfv_geometry(g), porosity = 0.3, permeability = K)
 ## Set up a vertical well in the first corner, perforated in top layer
