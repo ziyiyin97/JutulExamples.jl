@@ -19,6 +19,7 @@ g = CartesianMesh(dims, (30.0, 30.0, 30.0))
 nc = number_of_cells(g)
 Darcy = 9.869232667160130e-13
 Kx = 0.02 * ones(nx, nz) * Darcy
+Kx[:,4:6] .*= 1f-3
 K = vcat(vec(Kx)', vec(Kx)', vec(Kx)')
 res = discretized_domain_tpfv_flow(tpfv_geometry(g), porosity = 0.25, permeability = K)
 ## Set up a vertical well in the first corner, perforated in top layer
@@ -38,13 +39,11 @@ T0 = repeat([303.15], 1, nc)
 parameters[:Reservoir][:Temperature] = T0
 state0 = setup_reservoir_state(model, Pressure = 50*bar, OverallMoleFractions = [1.0, 0.0]);
 
-# 5 year (5*365.24 days)
+# 1000 days
 day = 24*3600.0
-dt = repeat([0.1]*day, 10000)
+dt = repeat([1]*day, 1000)
 rate_target = TotalRateTarget(5e-3)
 I_ctrl = InjectorControl(rate_target, [0, 1], density = rhoVS)
-#rate_target_prod = TotalRateTarget(-5e-3)
-#P_ctrl = ProducerControl(rate_target_prod)
 bhp_target = BottomHolePressureTarget(50*bar)
 P_ctrl = ProducerControl(bhp_target)
 
@@ -53,10 +52,9 @@ controls[:Injector] = I_ctrl
 controls[:Producer] = P_ctrl
 forces = setup_reservoir_forces(model, control = controls)
 
-sim, config = setup_reservoir_simulator(model, state0, parameters, info_level = -1);
+sim, config = setup_reservoir_simulator(model, state0, parameters, info_level = 1, max_timestep_cuts = 1000);
 @time states, reports = simulate!(sim, dt, forces = forces, config = config);
 
-print(stop)
 ## Once the simulation is done, we can plot the states
 
 using PyPlot

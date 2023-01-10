@@ -42,7 +42,7 @@ state0 = setup_reservoir_state(model, Pressure = 50*bar, OverallMoleFractions = 
 
 # 5 year (5*365.24 days)
 day = 24*3600.0
-dt = repeat([0.1]*day, 5)
+dt = repeat([1]*day, 5)
 rate_target = TotalRateTarget(9.5066e-06)
 I_ctrl = InjectorControl(rate_target, [0, 1], density = rhoVS)
 bhp_target = BottomHolePressureTarget(50*bar)
@@ -53,7 +53,7 @@ controls[:Injector] = I_ctrl
 controls[:Producer] = P_ctrl
 forces = setup_reservoir_forces(model, control = controls)
 
-sim, config = setup_reservoir_simulator(model, state0, parameters, info_level = -1);
+sim, config = setup_reservoir_simulator(model, state0, parameters, info_level = 1, max_timestep_cuts = 1000);
 @time states, reports = simulate!(sim, dt, forces = forces, config = config);
 
 ## Once the simulation is done, we can plot the states
