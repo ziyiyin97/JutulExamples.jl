@@ -19,7 +19,6 @@ g = CartesianMesh(dims, (30.0, 30.0, 30.0))
 nc = number_of_cells(g)
 Darcy = 9.869232667160130e-13
 Kx = 0.02 * ones(nx, nz) * Darcy
-Kx[:,4:6] .*= 1f-3
 K = vcat(vec(Kx)', vec(Kx)', vec(Kx)')
 res = discretized_domain_tpfv_flow(tpfv_geometry(g), porosity = 0.25, permeability = K)
 ## Set up a vertical well in the first corner, perforated in top layer
@@ -41,7 +40,7 @@ state0 = setup_reservoir_state(model, Pressure = 50*bar, OverallMoleFractions = 
 
 # 1000 days
 day = 24*3600.0
-dt = repeat([1]*day, 1000)
+dt = repeat([1]*day, 5)
 rate_target = TotalRateTarget(5e-3)
 I_ctrl = InjectorControl(rate_target, [0, 1], density = rhoVS)
 bhp_target = BottomHolePressureTarget(50*bar)
@@ -67,20 +66,4 @@ subplot(1,2,2);
 imshow(reshape(states[i][:Reservoir][:Pressure].-50*bar, nx, nz)', vmin=0, vmax=maximum(states[i][:Reservoir][:Pressure]).-50*bar); colorbar(); title("pressure - 50*bar")
 savefig("plots/2D-layer/sat-p-$i.png", bbox_inches="tight", dpi=300);
 close(fig)
-end
-
-figure(figsize=(20,12))
-for i = 1:6
-    subplot(2,3,i)
-    plot_velocity(S[10*i-9,:,:]', (h, h); new_fig=false, vmax=1)
-    colorbar()
-    title("CO2 concentration at day $((i-1)*10*dt)")
-end
-
-figure(figsize=(20,12))
-for i = 1:6
-    subplot(2,3,i)
-    plot_velocity(p[10*i-9,:,:]', (h, h); new_fig=false, vmax=1)
-    colorbar()
-    title("pressure at day $((i-1)*10*dt)")
 end
