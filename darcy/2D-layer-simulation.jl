@@ -43,7 +43,7 @@ state0 = setup_reservoir_state(model, Pressure = 50*bar, OverallMoleFractions = 
 # 5 year (5*365.24 days)
 day = 24*3600.0
 dt = repeat([20]*day, 50)
-rate_target = TotalRateTarget(9.5066e-06)
+rate_target = TotalRateTarget(5e-3)
 I_ctrl = InjectorControl(rate_target, [0, 1], density = rhoVS)
 bhp_target = BottomHolePressureTarget(50*bar)
 P_ctrl = ProducerControl(bhp_target)
