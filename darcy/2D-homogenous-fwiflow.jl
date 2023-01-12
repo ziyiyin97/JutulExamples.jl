@@ -1,5 +1,6 @@
 
 using MultiComponentFlash
+# molar mass, critical pressure, critical temperature, 
 h2o = MolecularProperty(0.018015268, 22.064e6, 647.096, 5.595e-05, 0.3442920843)
 co2 = MolecularProperty(0.0440098, 7.3773e6, 304.1282, 9.412e-05, 0.22394)
 
@@ -15,7 +16,7 @@ ny = 1
 nz = 15
 bar = 1e5
 dims = (nx, ny, nz)
-g = CartesianMesh(dims, (30.0, 30.0, 30.0))
+g = CartesianMesh(dims, (30.0, 30.0, 30.0) .* dims)
 nc = number_of_cells(g)
 Darcy = 9.869232667160130e-13
 Kx = 0.02 * ones(nx, nz) * Darcy
@@ -40,7 +41,7 @@ state0 = setup_reservoir_state(model, Pressure = 50*bar, OverallMoleFractions = 
 
 # 1000 days
 day = 24*3600.0
-dt = repeat([1]*day, 5)
+dt = repeat([20]*day, 50)
 rate_target = TotalRateTarget(5e-3)
 I_ctrl = InjectorControl(rate_target, [0, 1], density = rhoVS)
 bhp_target = BottomHolePressureTarget(50*bar)

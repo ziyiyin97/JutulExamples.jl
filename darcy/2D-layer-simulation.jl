@@ -15,7 +15,7 @@ ny = 1
 nz = 200
 bar = 1e5
 dims = (nx, ny, nz)
-g = CartesianMesh(dims, (12.5, 10.0, 1.0))
+g = CartesianMesh(dims, (12.5, 10.0, 1.0) .* dims)
 nc = number_of_cells(g)
 Darcy = 9.869232667160130e-13
 Kx = 1f-1 * ones(nx, nz) * Darcy
@@ -42,7 +42,7 @@ state0 = setup_reservoir_state(model, Pressure = 50*bar, OverallMoleFractions = 
 
 # 5 year (5*365.24 days)
 day = 24*3600.0
-dt = repeat([1]*day, 5)
+dt = repeat([20]*day, 50)
 rate_target = TotalRateTarget(9.5066e-06)
 I_ctrl = InjectorControl(rate_target, [0, 1], density = rhoVS)
 bhp_target = BottomHolePressureTarget(50*bar)
