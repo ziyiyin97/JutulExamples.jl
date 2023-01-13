@@ -24,10 +24,10 @@ function setup_bl(;nc = 100, time = 1.0, nstep = 100, poro = 0.1, perm = 9.8692e
     tot_time = sum(tstep)
     irate = 5*1000*sum(G.grid.pore_volumes.*poro)/tot_time
     src  = [SourceTerm(1, irate, fractional_flow = [1.0-1e-3, 1e-3]), 
-            SourceTerm(nc, -irate, fractional_flow = [1.0, 0.0])]
+            SourceTerm(nc, -irate, fractional_flow = [0.0, 1.0])]
     forces = setup_forces(model, sources = src)
 
-    parameters = setup_parameters(model, PhaseViscosities = [1e-3, 5e-3]) # 1 and 5 cP
+    parameters = setup_parameters(model, PhaseViscosities = [1e-4, 1e-3], density = [700.0, 1000.0]) # 0.1 and 1 cP
     state0 = setup_state(model, Pressure = p0, Saturations = [0.0, 1.0])
 
     return (model, state0, parameters, forces, tstep)
