@@ -55,6 +55,8 @@ forces = setup_reservoir_forces(model, control = controls)
 sim, config = setup_reservoir_simulator(model, state0, parameters, info_level = 1, max_timestep_cuts = 1000);
 @time states, reports = simulate!(sim, dt, forces = forces, config = config);
 
+@time states, rep = simulate(state0, model, dt, parameters = parameters, forces = forces, info_level = 1, max_timestep_cuts = 1000)
+
 ## Once the simulation is done, we can plot the states
 
 using PyPlot
