@@ -39,7 +39,6 @@ model = SimulationModel(G, sys)
 modeltrue = SimulationModel(Gtrue, sys)
 kr = BrooksCoreyRelPerm(sys, [2.0, 2.0])
 replace_variables!(model, RelativePermeabilities = kr)
-modeltrue = SimulationModel(Gtrue, sys)
 
 ## simulation time steppings
 day = 24*3600.0
