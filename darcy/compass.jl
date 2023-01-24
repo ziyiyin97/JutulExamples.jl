@@ -47,10 +47,10 @@ inj_loc = (q_true[1], 1, q_true[2])
 prod_loc = (nx, 1, nz)
 inj_cell = (inj_loc[end]-1)*nx+inj_loc[1]
 prod_cell = (prod_loc[end]-1)*nx+prod_loc[1]
-irate = 5e-2 * ρCO2
-#src  = [SourceTerm(inj_cell, irate, fractional_flow = [1.0, 0.0]), 
-#            SourceTerm(prod_cell, -irate, fractional_flow = [0.0, 1.0])]
-src  = [SourceTerm(inj_cell, irate, fractional_flow = [1.0, 0.0])]
+irate = 5e-3 * ρCO2
+src  = [SourceTerm(inj_cell, irate, fractional_flow = [1.0, 0.0]), 
+            SourceTerm(prod_cell, -irate, fractional_flow = [0.0, 1.0])]
+#src  = [SourceTerm(inj_cell, irate, fractional_flow = [1.0, 0.0])]
 forces = setup_forces(model, sources = src)  
 
 ## set up parameters
@@ -76,31 +76,3 @@ imshow(reshape(states[i][:Pressure], nx, nz)', vmin=0, vmax=maximum(states[i][:P
 savefig("plots/compass/sat-p-$i.png", bbox_inches="tight", dpi=300);
 close(fig)
 end
-
-h = 30.0
-dt = 20
-figure(figsize=(20,12))
-for i = 1:6
-    subplot(2,3,i)
-    if i == 1
-        plot_velocity(reshape(state0[:Saturations][1,:], nx, nz)', (h, h); new_fig=false, vmax=1)
-    else
-        plot_velocity(reshape(states[10*(i-1)][:Saturations][1,:], nx, nz)', (h, h); new_fig=false, vmax=1)
-    end
-    colorbar()
-    title("CO2 concentration at day $((i-1)*10*dt)")
-end
-savefig("plot-it-same-s.png", dpi=300, bbox_inches="tight")
-
-figure(figsize=(20,12))
-for i = 1:6
-    subplot(2,3,i)
-    if i == 1
-        plot_velocity(reshape(state0[:Pressure], nx, nz)', (h, h); new_fig=false)
-    else
-        plot_velocity(reshape(states[10*(i-1)][:Pressure], nx, nz)', (h, h); new_fig=false)
-    end
-    colorbar()
-    title("pressure at day $((i-1)*10*dt)")
-end
-savefig("plot-it-same-p.png", dpi=300, bbox_inches="tight")
