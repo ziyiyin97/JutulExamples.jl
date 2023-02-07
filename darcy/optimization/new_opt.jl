@@ -70,8 +70,10 @@ model, dt, forces, state0, parameters = simple_co2_setup(g, 0.25)
 sim, config = setup_reservoir_simulator(model, state0, parameters);
 ##
 opt_config = optimization_config(model, parameters, Dict(:Reservoir => [:FluidVolume, :Transmissibilities], :Injector => [:FluidVolume]))
+opt_config[:Reservoir][:Transmissibilities][:scaler] = :log
 F_o, dF_o, F_and_dF, x0, lims, data = setup_parameter_optimization(
     model, state0, parameters, dt, forces, mass_mismatch, opt_config, param_obj = true, print = 0, config = config);
+
 ##
 @time F_initial = F_o(x0)
 @time dF_initial = dF_o(similar(x0), x0)
@@ -105,8 +107,8 @@ function grad_test(misfit, x0, dx, g; maxiter=6, h0=5f-2, data=false, stol=1f-1)
     @test isapprox(mean(rate2), 1.5625f0; atol=stol)
 end
 
-dx0 = rand(length(x0))
-dx0 = dx0/norm(dx0) * norm(x0)/1e16
+dx0 = randn(length(x0))
+dx0 = dx0/norm(dx0) * norm(x0)/1e5
 grad_test(F_o, x0, dx0, dF_initial)
 
 f(x0_trans) = vcat(x0_trans, x0[2081:end])
