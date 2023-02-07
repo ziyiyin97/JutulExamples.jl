@@ -1,4 +1,4 @@
-using JutulDarcy, JutulViz, Jutul
+using JutulDarcy, Jutul
 ## Define and plot the mesh
 nx = 20
 ny = 10
@@ -18,10 +18,7 @@ K = vcat(repeat([0.65], nlayer), repeat([0.3], nlayer), repeat([0.5], nlayer), r
 P = setup_vertical_well(g, K, 1, 1, name = :Producer);
 ## Set up an injector in the upper left corner
 I = setup_well(g, K, [(nx, ny, 1)], name = :Injector);
-## Plot the permeability (scaled to Darcy) and the wells
-fig, ax, p = plot_cell_data(g, K/Darcy)
-plot_well!(ax, g, I, textscale = 0.1)
-plot_well!(ax, g, P, color = :darkblue, textscale = 0.1)
+
 ## Set up a two-phase immiscible system and define a density secondary variable
 phases = (LiquidPhase(), VaporPhase())
 rhoLS = 1000.0
@@ -31,7 +28,7 @@ sys = ImmiscibleSystem(phases, reference_densities = rhoS)
 c = [1e-6/bar, 1e-4/bar]
 ρ = ConstantCompressibilityDensities(p_ref = 1*bar, density_ref = rhoS, compressibility = c)
 ## Set up a reservoir model that contains the reservoir, wells and a facility that controls the wells
-model, parameters = setup_reservoir_model(g, sys, wells = [I, P])
+model, parameters = setup_reservoir_model(g, sys, wells = [I, P], backend = :csc, block_backend = true)
 display(model)
 ## Replace the density function with our custom version
 replace_variables!(model, PhaseMassDensities = ρ)
@@ -62,12 +59,41 @@ controls[:Producer] = P_ctrl
 forces = setup_reservoir_forces(model, control = controls)
 ## Finally simulate!
 sim, config = setup_reservoir_simulator(model, state0, parameters, info_level = 0)
-states, reports = simulate!(sim, dt, forces = forces, config = config);
+@time states, reports = simulate!(sim, dt, forces = forces, config = config);
+@time states, reports = simulate!(sim, dt, forces = forces, config = config);
 
-## Once the simulation is done, we can plot the states
-f, = plot_interactive(g, map(x -> x[:Reservoir], states))
-display(f)
-## Plot the wells
-wd = full_well_outputs(sim.model, states, forces)
-time = report_times(reports)
-plot_well_results(wd, time)
+function mass_mismatch(m, state, dt, step_no, forces)
+       state_ref = states[step_no]
+       fld = :Saturations
+       val = state[:Reservoir][fld]
+       ref = state_ref[:Reservoir][fld]
+       err = 0
+       for i in axes(val, 2)
+           err += (val[1, i] - ref[1, i])^2
+       end
+       return dt*err
+end
+@assert Jutul.evaluate_objective(mass_mismatch, model, states, dt, forces) == 0.0
+cfg = optimization_config(model, parameters, use_scaling = true, rel_min = 0.1, rel_max = 10)
+for (ki, vi) in cfg[:Reservoir]
+    if ki in [:TwoPointGravityDifference,
+              :PhaseViscosities]
+        # We are not interested in matching gravity effects or viscosity here.
+        vi[:active] = false
+    end
+    if ki == :Transmissibilities
+        # Transmissibilities are derived from permeability and varies significantly. We can set
+        # log scaling to get a better conditioned optimization system, without changing the limits
+        # or the result.
+        vi[:scaler] = :log
+    end
+end
+for keywords in [:Injector, :Producer, :Facility]
+    for (ki, vi) in cfg[keywords]
+        vi[:active] = false
+    end
+end
+
+print_obj = 100
+
+F_o, dF_o, F_and_dF, x0, lims, data = setup_parameter_optimization(model, state0, parameters, dt, forces, mass_mismatch, cfg, print = print_obj, param_obj = true); # this errors
