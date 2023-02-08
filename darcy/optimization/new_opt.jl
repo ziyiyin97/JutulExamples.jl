@@ -1,4 +1,6 @@
 using JutulDarcy, Jutul, LinearAlgebra
+using Random
+Random.seed!(2023)
 nx = 20
 ny = 10
 nz = 4
@@ -48,10 +50,9 @@ function simple_co2_setup(g = g, poro = initial_poro, K = 0.1*Darcy, irate = inj
 end
 
 model_ref, dt, forces, state0, parameters_ref = simple_co2_setup()
-sim, config = setup_reservoir_simulator(model_ref, state0, parameters_ref)
-@time states_ref, reports = simulate!(sim, dt, forces = forces, config = config);
+sim, config = setup_reservoir_simulator(model_ref, state0, parameters_ref);
+@time states_ref, reports = simulate!(sim, dt, forces = forces, config = config, info_level=1);
 ##
-
 
 function mass_mismatch(m, state, dt, step_no, forces)
     state_ref = states_ref[step_no]
@@ -62,12 +63,17 @@ function mass_mismatch(m, state, dt, step_no, forces)
     for i in axes(val, 2)
         err += (val[1, i] - ref[1, i])^2
     end
-    return dt*err
+    return 0.5*err
 end
 ##
 # Perturbed porosity
 model, dt, forces, state0, parameters = simple_co2_setup(g, 0.25)
 sim, config = setup_reservoir_simulator(model, state0, parameters);
+@time states, reports = simulate!(sim, dt, forces = forces, config = config, info_level=1);
+
+@assert Jutul.evaluate_objective(mass_mismatch, model, states_ref, dt, forces) == 0.0
+@assert Jutul.evaluate_objective(mass_mismatch, model, states, dt, forces) > 0.0
+
 ##
 opt_config = optimization_config(model, parameters, Dict(:Reservoir => [:FluidVolume, :Transmissibilities], :Injector => [:FluidVolume]))
 opt_config[:Reservoir][:Transmissibilities][:scaler] = :log
@@ -108,7 +114,7 @@ function grad_test(misfit, x0, dx, g; maxiter=6, h0=5f-2, data=false, stol=1f-1)
 end
 
 dx0 = randn(length(x0))
-dx0 = dx0/norm(dx0) * norm(x0)/1e5
+dx0 = dx0/norm(dx0) * norm(x0)/5e5
 grad_test(F_o, x0, dx0, dF_initial)
 
 f(x0_trans) = vcat(x0_trans, x0[2081:end])
