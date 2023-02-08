@@ -57,13 +57,12 @@ sim, config = setup_reservoir_simulator(model_ref, state0, parameters_ref);
 function mass_mismatch(m, state, dt, step_no, forces)
     state_ref = states_ref[step_no]
     fld = :Saturations
+    fld2 = :Pressure
     val = state[:Reservoir][fld]
     ref = state_ref[:Reservoir][fld]
-    err = 0
-    for i in axes(val, 2)
-        err += (val[1, i] - ref[1, i])^2
-    end
-    return 0.5*err
+    val2 = state[:Reservoir][fld2]
+    ref2 = state_ref[:Reservoir][fld2]
+    return 0.5 * sum((val[1,:] - ref[1,:]).^2) + 0.5 * sum((val2-ref2).^2)
 end
 ##
 # Perturbed porosity
