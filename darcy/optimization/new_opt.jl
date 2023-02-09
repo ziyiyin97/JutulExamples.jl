@@ -6,6 +6,12 @@ ny = 10
 nz = 4
 
 initial_poro = 0.1
+initial_poro = 0.1 * ones(nx, ny, nz)
+initial_poro[1,:,:] .= 1e8
+initial_poro[end,:,:] .= 1e8
+initial_poro[:,:,1] .= 1e8
+initial_poro[:,:,end] .= 1e8
+initial_poro = vec(initial_poro)
 day = 3600*24
 bar = 1e5
 Darcy = 9.869232667160130e-13
@@ -13,7 +19,7 @@ Darcy = 9.869232667160130e-13
 dims = (nx, ny, nz)
 g = CartesianMesh(dims, (2000.0, 1500.0, 100.0))
 geo = tpfv_geometry(g)
-pvol = sum(geo.volumes)*initial_poro
+pvol = sum(geo.volumes)*0.1
 total_time = 12*5*day # ~5 years of injection
 inj_rate = 0.025*pvol/total_time
 
@@ -80,8 +86,8 @@ F_o, dF_o, F_and_dF, x0, lims, data = setup_parameter_optimization(
     model, state0, parameters, dt, forces, mass_mismatch, opt_config, param_obj = true, print = 0, config = config);
 
 ##
-@time F_initial = F_o(x0)
-@time dF_initial = dF_o(similar(x0), x0)
+dF_initial = similar(x0);
+@time F_initial = F_and_dF(F_o, dF_initial, x0);
 @info "Initial objective: $F_initial, gradient norm $(norm(dF_initial))"
 
 mean(x) = sum(x)/length(x)
